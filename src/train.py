@@ -1,1 +1,110 @@
-# Deep Learning training script using Whisper and LoRA
+import os
+import argparse
+import torch
+from transformers import (
+    WhisperForConditionalGeneration, 
+    WhisperProcessor,
+    TrainingArguments, 
+    Trainer
+)
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from utils import prepare_dataset, DataCollatorSpeechSeq2SeqWithPadding
+import jiwer
+
+def compute_metrics(pred, tokenizer):
+    pred_ids = pred.predictions
+    label_ids = pred.label_ids
+
+    # replace -100 with the pad_token_id
+    label_ids[label_ids == -100] = tokenizer.pad_token_id
+
+    # we do not want to group tokens when computing the metrics
+    pred_str = tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
+    label_str = tokenizer.batch_decode(label_ids, skip_special_tokens=True)
+
+    wer = 100 * jiwer.wer(label_str, pred_str)
+
+    return {"wer": wer}
+
+def train():
+    parser = argparse.ArgumentParser(description="Fine-tune Whisper with LoRA")
+    parser.add_argument("--model_name", type=str, default="openai/whisper-medium", help="Base model name")
+    parser.add_argument("--train_manifest", type=str, default="data/processed/train_manifest.json", help="Path to training manifest")
+    parser.add_argument("--val_manifest", type=str, default="data/processed/val_manifest.json", help="Path to validation manifest")
+    parser.add_argument("--output_dir", type=str, default="./models/whisper-indian-lora", help="Output directory")
+    parser.add_argument("--epochs", type=int, default=5, help="Number of training epochs")
+    parser.add_argument("--batch_size", type=int, default=16, help="Training batch size")
+    parser.add_argument("--learning_rate", type=float, default=1e-4, help="Learning rate")
+    
+    args = parser.parse_args()
+
+    # 1. Load Processor and Model
+    processor = WhisperProcessor.from_pretrained(args.model_name, language="English", task="transcribe")
+    model = WhisperForConditionalGeneration.from_pretrained(args.model_name)
+
+    # 2. Prepare Model for PEFT
+    model = prepare_model_for_kbit_training(model)
+    
+    config = LoraConfig(
+        r=16,
+        lora_alpha=32,
+        target_modules=["q_proj", "v_proj"],
+        lora_dropout=0.05,
+        bias="none",
+    )
+    
+    model = get_peft_model(model, config)
+    model.print_trainable_parameters()
+
+    # 3. Load Datasets
+    print("Loading datasets...")
+    train_dataset = prepare_dataset(args.train_manifest, processor.feature_extractor, processor.tokenizer)
+    val_dataset = prepare_dataset(args.val_manifest, processor.feature_extractor, processor.tokenizer)
+
+    data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
+
+    # 4. Define Training Arguments
+    training_args = TrainingArguments(
+        output_dir=args.output_dir,
+        per_device_train_batch_size=args.batch_size,
+        gradient_accumulation_steps=2,
+        learning_rate=args.learning_rate,
+        warmup_steps=50,
+        max_steps=5000, # Adjust based on dataset size
+        fp16=True,
+        evaluation_strategy="steps",
+        per_device_eval_batch_size=8,
+        predict_with_generate=True,
+        generation_max_length=225,
+        save_steps=1000,
+        eval_steps=1000,
+        logging_steps=25,
+        report_to=["tensorboard"],
+        load_best_model_at_end=True,
+        metric_for_best_model="wer",
+        greater_is_better=False,
+        push_to_hub=False,
+    )
+
+    # 5. Initialize Trainer
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=val_dataset,
+        data_collator=data_collator,
+        compute_metrics=lambda p: compute_metrics(p, processor.tokenizer),
+        tokenizer=processor.feature_extractor,
+    )
+
+    # 6. Start Training
+    print("Starting training...")
+    trainer.train()
+
+    # 7. Save final model
+    model.save_pretrained(os.path.join(args.output_dir, "final"))
+    print(f"Training complete. Model saved to {args.output_dir}")
+
+if __name__ == "__main__":
+    train()
+
