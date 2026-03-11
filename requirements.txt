@@ -1,0 +1,35 @@
+# Core Deep Learning
+torch
+torchaudio
+transformers
+datasets
+peft
+accelerate
+
+# Audio Processing
+librosa
+soundfile
+
+# Evaluation & Metrics
+jiwer
+tensorboard
+scikit-learn
+
+# Visualization & Data
+pandas
+matplotlib
+seaborn
+
+# Experiment Tracking & Optimization
+optuna
+# wandb  # Uncomment to use Weights & Biases
+
+# Deployment
+gradio
+onnx
+optimum[onnxruntime]
+
+# Utilities
+tqdm
+python-dotenv
+pyyaml
