@@ -4,13 +4,18 @@ import subprocess
 from datasets import load_dataset
 
 def download_svarah(base_path):
-    print("🚀 Downloading Svarah Dataset...")
-    target_path = os.path.join(base_path, "svarah")
-    if not os.path.exists(target_path):
-        subprocess.run(["git", "clone", "https://github.com/AI4Bharat/Svarah.git", target_path])
-        print("✅ Svarah Cloned.")
-    else:
-        print("⏭️ Svarah already exists.")
+    print("🚀 Downloading Svarah Dataset from Hugging Face...")
+    try:
+        dataset = load_dataset("ai4bharat/Svarah", split="train")
+        print("✅ Svarah Loaded/Cached from Hugging Face.")
+        
+        # Also clone the repo for eval scripts as requested by the user's research docs
+        repo_path = os.path.join(base_path, "svarah_repo")
+        if not os.path.exists(repo_path):
+            subprocess.run(["git", "clone", "https://github.com/AI4Bharat/Svarah.git", repo_path])
+            print("✅ Svarah Repo Cloned (for scripts).")
+    except Exception as e:
+        print(f"❌ Error downloading Svarah: {e}")
 
 def download_indic_accent_db(base_path):
     print("🚀 Downloading IndicAccentDb from Hugging Face...")
