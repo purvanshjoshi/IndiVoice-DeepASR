@@ -38,7 +38,23 @@ def train():
     
     args = parser.parse_args()
 
+    # 0. Check Environment
+    if not torch.cuda.is_available():
+        print("\n" + "="*50)
+        print("⚠️ WARNING: GPU NOT DETECTED!")
+        print("Training Whisper on CPU will be 50-100x slower.")
+        print("If you are in Colab, go to: Runtime -> Change runtime type -> T4 GPU.")
+        print("="*50 + "\n")
+
+    # 0.1 Check Manifests
+    for path in [args.train_manifest, args.val_manifest]:
+        if not os.path.exists(path):
+            print(f"❌ Error: Manifest not found at {path}")
+            print("Please run Section 4 (Preprocessing) first to generate this file.")
+            return
+
     # 1. Load Processor and Model
+    print(f"Loading processor and model: {args.model_name}...")
     processor = WhisperProcessor.from_pretrained(args.model_name, language="English", task="transcribe")
     model = WhisperForConditionalGeneration.from_pretrained(args.model_name)
 

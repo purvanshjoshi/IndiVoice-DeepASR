@@ -89,22 +89,50 @@ def process_hf_dataset(dataset_name, output_dir, manifest_path, target_sr=16000)
     print(f"Preprocessing {len(ds)} samples...")
     
     for i, item in enumerate(tqdm(ds)):
-        audio_data = item["audio"]
-        # Handle different common text field names
+        # Handle variations in schema
+        audio_data = item.get("audio")
+        # Possible transcript keys
         text = item.get("text") or item.get("sentence") or item.get("transcript") or item.get("transcription")
         
-        if audio_data is None or text is None:
+        waveform = None
+        sr = target_sr
+        
+        # Scenario 1: Nested 'audio' object (Standard HF)
+        if audio_data and isinstance(audio_data, dict) and "array" in audio_data:
+            waveform = torch.tensor(audio_data["array"]).unsqueeze(0)
+            sr = audio_data.get("sampling_rate", target_sr)
+        
+        # Scenario 2: Direct file path or object
+        elif "audio_filepath" in item or "path" in item:
+            audio_path_key = "audio_filepath" if "audio_filepath" in item else "path"
+            try:
+                # Svarah often has paths relative to its own structure
+                # We try to load it locally if it's been downloaded
+                possible_path = item[audio_path_key]
+                if os.path.exists(possible_path):
+                    waveform, sr = torchaudio.load(possible_path)
+                else:
+                    # If it's just a reference, we might need to skip or handle differently
+                    # For Svarah HF, the dataset usually handles this if mapped correctly
+                    # But if we get here, it means the 'audio' feature didn't auto-resolve
+                    continue 
+            except Exception as e:
+                print(f"Skipping {i} due to path error: {e}")
+                continue
+
+        if waveform is None or text is None:
             continue
             
-        # Standardize
-        waveform = torch.tensor(audio_data["array"]).unsqueeze(0)
-        sr = audio_data["sampling_rate"]
-        
+        # Standardize to target sample rate
         if sr != target_sr:
             resampler = Resample(sr, target_sr)
             waveform = resampler(waveform)
             
-        # Save audio
+        # Standardize to Mono
+        if waveform.shape[0] > 1:
+            waveform = waveform.mean(dim=0, keepdim=True)
+            
+        # Save audio locally in Move to processed
         audio_filename = f"hf_{i}.wav"
         audio_path = os.path.join(output_dir, audio_filename)
         torchaudio.save(audio_path, waveform, target_sr)
