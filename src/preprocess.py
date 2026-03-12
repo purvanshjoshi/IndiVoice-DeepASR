@@ -5,7 +5,7 @@ import json
 import torch
 from tqdm import tqdm
 from torchaudio.transforms import Resample
-from datasets import load_dataset
+from datasets import load_dataset, Audio
 
 def preprocess_audio(input_path, output_path, target_sr=16000):
     """
@@ -69,6 +69,7 @@ def process_hf_dataset(dataset_name, output_dir, manifest_path, target_sr=16000)
     Downloads, standardizes, and saves a Hugging Face dataset to local drive.
     Automatically detects available splits (train, test, validation).
     """
+    print(f"--- IndiVoice Preprocessing Engine v1.2 (Latest Fix) ---")
     print(f"Loading Hugging Face dataset: {dataset_name}...")
     
     ds = None
@@ -80,50 +81,44 @@ def process_hf_dataset(dataset_name, output_dir, manifest_path, target_sr=16000)
         except Exception:
             continue
             
-    if ds is None:
-        print(f"❌ Error: Could not load any valid split (train/test/validation) for {dataset_name}. Check permissions or dataset name.")
+    # Identify audio and text columns
+    audio_cols = [c for c in ds.column_names if c in ["audio", "audio_filepath", "path", "file"]]
+    text_cols = [c for c in ds.column_names if c in ["text", "sentence", "transcript", "transcription", "transcript_clean"]]
+    
+    if not audio_cols:
+        print(f"❌ Error: Could not find an audio column in {dataset_name}. Found: {ds.column_names}")
         return
-
+    if not text_cols:
+        print(f"❌ Error: Could not find a text/transcript column in {dataset_name}. Found: {ds.column_names}")
+        return
+    
+    audio_key = audio_cols[0]
+    text_key = text_cols[0]
+    
+    # Force cast the audio column to Audio feature so HF handles decoding
+    print(f"Using '{audio_key}' for audio and '{text_key}' for transcripts.")
+    ds = ds.cast_column(audio_key, Audio(sampling_rate=target_sr))
+    
     os.makedirs(output_dir, exist_ok=True)
     manifest_entries = []
     print(f"Preprocessing {len(ds)} samples...")
     
     for i, item in enumerate(tqdm(ds)):
-        # Handle variations in schema
-        audio_data = item.get("audio")
-        # Possible transcript keys
-        text = item.get("text") or item.get("sentence") or item.get("transcript") or item.get("transcription")
+        audio_data = item.get(audio_key)
+        text = item.get(text_key)
         
-        waveform = None
-        sr = target_sr
-        
-        # Scenario 1: Nested 'audio' object (Standard HF)
-        if audio_data and isinstance(audio_data, dict) and "array" in audio_data:
-            waveform = torch.tensor(audio_data["array"]).unsqueeze(0)
-            sr = audio_data.get("sampling_rate", target_sr)
-        
-        # Scenario 2: Direct file path or object
-        elif "audio_filepath" in item or "path" in item:
-            audio_path_key = "audio_filepath" if "audio_filepath" in item else "path"
-            try:
-                # Svarah often has paths relative to its own structure
-                # We try to load it locally if it's been downloaded
-                possible_path = item[audio_path_key]
-                if os.path.exists(possible_path):
-                    waveform, sr = torchaudio.load(possible_path)
-                else:
-                    # If it's just a reference, we might need to skip or handle differently
-                    # For Svarah HF, the dataset usually handles this if mapped correctly
-                    # But if we get here, it means the 'audio' feature didn't auto-resolve
-                    continue 
-            except Exception as e:
-                print(f"Skipping {i} due to path error: {e}")
-                continue
-
-        if waveform is None or text is None:
+        if not audio_data or not text:
             continue
             
-        # Standardize to target sample rate
+        try:
+            waveform = torch.tensor(audio_data["array"]).unsqueeze(0)
+            sr = audio_data.get("sampling_rate", target_sr)
+        except Exception as e:
+            # Fallback if casting didn't yield a dict (unlikely with HF Audio feature)
+            print(f"Skipping {i} due to decoding error: {e}")
+            continue
+
+        # Standardize to target sample rate (should already be done by cast_column)
         if sr != target_sr:
             resampler = Resample(sr, target_sr)
             waveform = resampler(waveform)
