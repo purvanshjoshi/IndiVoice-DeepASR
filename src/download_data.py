@@ -6,8 +6,9 @@ from datasets import load_dataset
 def download_svarah(base_path):
     print("🚀 Downloading Svarah Dataset from Hugging Face...")
     try:
-        dataset = load_dataset("ai4bharat/Svarah", split="train")
-        print("✅ Svarah Loaded/Cached from Hugging Face.")
+        # Svarah on HF only has a 'test' split
+        dataset = load_dataset("ai4bharat/Svarah", split="test")
+        print("✅ Svarah Loaded/Cached from Hugging Face (using 'test' split).")
         
         # Also clone the repo for eval scripts as requested by the user's research docs
         repo_path = os.path.join(base_path, "svarah_repo")
