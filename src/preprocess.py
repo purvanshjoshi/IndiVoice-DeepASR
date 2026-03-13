@@ -99,22 +99,33 @@ def process_hf_dataset(dataset_name, output_dir, manifest_path, target_sr=16000)
     print(f"Using '{audio_key}' for audio and '{text_key}' for transcripts.")
     ds = ds.cast_column(audio_key, Audio(sampling_rate=target_sr))
     
+    # Force python format to ensure dicts are returned when indexed
+    ds = ds.with_format("python")
+    
     os.makedirs(output_dir, exist_ok=True)
     manifest_entries = []
     print(f"Preprocessing {len(ds)} samples...")
     
-    for i, item in enumerate(tqdm(ds)):
-        audio_data = item.get(audio_key)
-        text = item.get(text_key)
-        
-        if not audio_data or not text:
-            continue
-            
+    # Use index-based access to reliably trigger decoders in all environments
+    for i in tqdm(range(len(ds))):
         try:
-            waveform = torch.tensor(audio_data["array"]).unsqueeze(0)
-            sr = audio_data.get("sampling_rate", target_sr)
+            item = ds[i]
+            audio_data = item.get(audio_key)
+            text = item.get(text_key)
+            
+            if not audio_data or not text:
+                continue
+                
+            # In some versions, audio_data might be the array directly or a dict
+            if isinstance(audio_data, dict) and "array" in audio_data:
+                waveform = torch.tensor(audio_data["array"]).unsqueeze(0)
+                sr = audio_data.get("sampling_rate", target_sr)
+            else:
+                # Fallback: if it's already an array/tensor
+                waveform = torch.tensor(audio_data).unsqueeze(0) if not torch.is_tensor(audio_data) else audio_data.unsqueeze(0)
+                sr = target_sr
         except Exception as e:
-            # Fallback if casting didn't yield a dict (unlikely with HF Audio feature)
+            # This is where the 'AudioDecoder' error was happening
             print(f"Skipping {i} due to decoding error: {e}")
             continue
 
