@@ -33,7 +33,8 @@ def train():
     parser.add_argument("--val_manifest", type=str, default="data/processed/val_manifest.json", help="Path to validation manifest")
     parser.add_argument("--output_dir", type=str, default="./models/whisper-indian-lora", help="Output directory")
     parser.add_argument("--epochs", type=int, default=5, help="Number of training epochs")
-    parser.add_argument("--batch_size", type=int, default=16, help="Training batch size")
+    parser.add_argument("--batch_size", type=int, default=4, help="Training batch size (lowered for VRAM)")
+    parser.add_argument("--grad_accum", type=int, default=8, help="Gradient accumulation steps")
     parser.add_argument("--learning_rate", type=float, default=1e-4, help="Learning rate")
     
     args = parser.parse_args()
@@ -59,6 +60,7 @@ def train():
     model = WhisperForConditionalGeneration.from_pretrained(args.model_name)
 
     # 2. Prepare Model for PEFT
+    model.config.use_cache = False # Required for gradient checkpointing
     model = prepare_model_for_kbit_training(model)
     
     config = LoraConfig(
@@ -83,13 +85,13 @@ def train():
     training_args = Seq2SeqTrainingArguments(
         output_dir=args.output_dir,
         per_device_train_batch_size=args.batch_size,
-        gradient_accumulation_steps=2,
+        gradient_accumulation_steps=args.grad_accum, # Maintain effective batch size
         learning_rate=args.learning_rate,
         warmup_steps=50,
         max_steps=5000, # Adjust based on dataset size
         fp16=True,
         eval_strategy="steps",
-        per_device_eval_batch_size=8,
+        per_device_eval_batch_size=4, # Lowered from 8
         predict_with_generate=True,
         generation_max_length=225,
         save_steps=1000,
@@ -100,6 +102,7 @@ def train():
         metric_for_best_model="wer",
         greater_is_better=False,
         push_to_hub=False,
+        gradient_checkpointing=True, # Critical for fitting Whisper on 15GB VRAM
     )
 
     # 5. Initialize Trainer
