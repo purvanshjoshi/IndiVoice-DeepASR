@@ -69,7 +69,7 @@ def process_hf_dataset(dataset_name, output_dir, manifest_path, target_sr=16000)
     Downloads, standardizes, and saves a Hugging Face dataset to local drive.
     Automatically detects available splits (train, test, validation).
     """
-    print(f"--- IndiVoice Preprocessing Engine v1.2 (Latest Fix) ---")
+    print(f"--- IndiVoice Preprocessing Engine v1.4 (torchcodec Stability) ---")
     print(f"Loading Hugging Face dataset: {dataset_name}...")
     
     ds = None
