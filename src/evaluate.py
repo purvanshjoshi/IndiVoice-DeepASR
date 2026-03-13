@@ -17,6 +17,11 @@ def evaluate():
     args = parser.parse_args()
 
     # 1. Load Config and Model
+    if not os.path.exists(args.model_path):
+        print(f"❌ Error: Model path {args.model_path} does not exist.")
+        print("Please run Section 5 (Training) first to train and save the model.")
+        return
+        
     print(f"Loading model from {args.model_path}...")
     peft_config = PeftConfig.from_pretrained(args.model_path)
     base_model = WhisperForConditionalGeneration.from_pretrained(peft_config.base_model_name_or_path)

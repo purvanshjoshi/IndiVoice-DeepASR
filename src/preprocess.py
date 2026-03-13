@@ -115,15 +115,31 @@ def process_hf_dataset(dataset_name, output_dir, manifest_path, target_sr=16000)
             
             if not audio_data or not text:
                 continue
-                
-            # In some versions, audio_data might be the array directly or a dict
-            if isinstance(audio_data, dict) and "array" in audio_data:
-                waveform = torch.tensor(audio_data["array"]).unsqueeze(0)
-                sr = audio_data.get("sampling_rate", target_sr)
-            else:
-                # Fallback: if it's already an array/tensor
-                waveform = torch.tensor(audio_data).unsqueeze(0) if not torch.is_tensor(audio_data) else audio_data.unsqueeze(0)
-                sr = target_sr
+            
+            # Robust extraction of waveform and sampling rate
+            waveform = None
+            sr = target_sr
+            
+            if isinstance(audio_data, dict):
+                if "array" in audio_data:
+                    waveform = torch.tensor(audio_data["array"]).unsqueeze(0)
+                    sr = audio_data.get("sampling_rate", target_sr)
+            elif hasattr(audio_data, "get") and callable(getattr(audio_data, "get")):
+                # Handle cases where it might be a decoder object with a get method
+                decoded = audio_data
+                if "array" in decoded:
+                    waveform = torch.tensor(decoded["array"]).unsqueeze(0)
+                    sr = decoded.get("sampling_rate", target_sr)
+            
+            if waveform is None:
+                # Last resort decoding attempt
+                try:
+                    import numpy as np
+                    arr = np.array(audio_data)
+                    waveform = torch.from_numpy(arr).unsqueeze(0)
+                except Exception:
+                    print(f"Skipping {i}: Could not decode audio_data of type {type(audio_data)}")
+                    continue
         except Exception as e:
             # This is where the 'AudioDecoder' error was happening
             print(f"Skipping {i} due to decoding error: {e}")

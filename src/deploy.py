@@ -6,6 +6,11 @@ from transformers import WhisperForConditionalGeneration, WhisperProcessor
 from peft import PeftModel, PeftConfig
 
 def load_indivoice_model(model_path):
+    if not os.path.exists(model_path):
+        print(f"❌ Error: Model path {model_path} does not exist.")
+        print("Please train the model before launching the demo.")
+        import sys
+        sys.exit(1)
     print(f"Loading IndiVoice-DeepASR model from {model_path}...")
     peft_config = PeftConfig.from_pretrained(model_path)
     base_model = WhisperForConditionalGeneration.from_pretrained(peft_config.base_model_name_or_path)

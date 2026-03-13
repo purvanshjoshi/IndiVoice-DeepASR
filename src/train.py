@@ -88,7 +88,7 @@ def train():
         warmup_steps=50,
         max_steps=5000, # Adjust based on dataset size
         fp16=True,
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         per_device_eval_batch_size=8,
         predict_with_generate=True,
         generation_max_length=225,
