@@ -4,8 +4,8 @@ import torch
 from transformers import (
     WhisperForConditionalGeneration, 
     WhisperProcessor,
-    TrainingArguments, 
-    Trainer
+    Seq2SeqTrainingArguments, 
+    Seq2SeqTrainer
 )
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from utils import prepare_dataset, DataCollatorSpeechSeq2SeqWithPadding
@@ -80,7 +80,7 @@ def train():
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
 
     # 4. Define Training Arguments
-    training_args = TrainingArguments(
+    training_args = Seq2SeqTrainingArguments(
         output_dir=args.output_dir,
         per_device_train_batch_size=args.batch_size,
         gradient_accumulation_steps=2,
@@ -103,7 +103,7 @@ def train():
     )
 
     # 5. Initialize Trainer
-    trainer = Trainer(
+    trainer = Seq2SeqTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
