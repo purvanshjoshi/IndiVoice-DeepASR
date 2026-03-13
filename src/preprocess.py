@@ -115,17 +115,56 @@ def process_hf_dataset(dataset_name, output_dir, manifest_path, target_sr=16000)
             
             if not audio_data or not text:
                 continue
-                
-            # In some versions, audio_data might be the array directly or a dict
-            if isinstance(audio_data, dict) and "array" in audio_data:
-                waveform = torch.tensor(audio_data["array"]).unsqueeze(0)
-                sr = audio_data.get("sampling_rate", target_sr)
-            else:
-                # Fallback: if it's already an array/tensor
-                waveform = torch.tensor(audio_data).unsqueeze(0) if not torch.is_tensor(audio_data) else audio_data.unsqueeze(0)
-                sr = target_sr
+            
+            # Robust extraction of waveform and sampling rate
+            waveform = None
+            sr = target_sr
+            
+            # Layer 1: Standard dictionary (already decoded)
+            if isinstance(audio_data, dict):
+                if "array" in audio_data:
+                    waveform = torch.tensor(audio_data["array"]).unsqueeze(0)
+                    sr = audio_data.get("sampling_rate", target_sr)
+            
+            # Layer 2: Decoder object with decode() method (e.g., torchcodec or newer datasets)
+            if waveform is None and hasattr(audio_data, "decode"):
+                try:
+                    decoded = audio_data.decode()
+                    if isinstance(decoded, dict) and "array" in decoded:
+                        waveform = torch.tensor(decoded["array"]).unsqueeze(0)
+                        sr = decoded.get("sampling_rate", target_sr)
+                except Exception:
+                    pass
+            
+            # Layer 3: Callable decoder object (common in some HF versions)
+            if waveform is None and callable(audio_data):
+                try:
+                    decoded = audio_data()
+                    if isinstance(decoded, dict) and "array" in decoded:
+                        waveform = torch.tensor(decoded["array"]).unsqueeze(0)
+                        sr = decoded.get("sampling_rate", target_sr)
+                except Exception:
+                    pass
+            
+            # Layer 4: Object with 'array' or 'sampling_rate' attributes directly
+            if waveform is None:
+                try:
+                    if hasattr(audio_data, "array"):
+                        waveform = torch.tensor(getattr(audio_data, "array")).unsqueeze(0)
+                        sr = getattr(audio_data, "sampling_rate", target_sr)
+                except Exception:
+                    pass
+
+            if waveform is None:
+                # Last resort: Try to cast to numpy array directly
+                try:
+                    import numpy as np
+                    arr = np.array(audio_data)
+                    waveform = torch.from_numpy(arr).unsqueeze(0)
+                except Exception:
+                    print(f"Skipping {i}: Could not decode audio_data of type {type(audio_data)}")
+                    continue
         except Exception as e:
-            # This is where the 'AudioDecoder' error was happening
             print(f"Skipping {i} due to decoding error: {e}")
             continue
 

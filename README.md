@@ -11,6 +11,9 @@
   [![License](https://img.shields.io/badge/License-MIT-4CAF50?style=for-the-badge)](LICENSE)
 
   [**Explore the Code**](https://github.com/purvanshjoshi/IndiVoice-DeepASR) • [**Launch Colab**](https://colab.research.google.com/github/purvanshjoshi/IndiVoice-DeepASR/blob/main/notebooks/IndiVoice_Colab_Entry.ipynb) • [**Read the Paper**](paper/)
+
+  > [!NOTE]
+  > **Latest Stability Update (v1.2)**: Fixed `AudioDecoder` crash in preprocessing and resolved `transformers` v4.4x compatibility issues in the training pipeline.
 </div>
 
 ---
