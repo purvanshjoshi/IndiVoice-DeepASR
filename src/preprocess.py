@@ -126,16 +126,29 @@ def process_hf_dataset(dataset_name, output_dir, manifest_path, target_sr=16000)
                     waveform = torch.tensor(audio_data["array"]).unsqueeze(0)
                     sr = audio_data.get("sampling_rate", target_sr)
             
-            # Layer 2: Decoder object with decode() method (e.g., torchcodec or newer datasets)
-            if waveform is None and hasattr(audio_data, "decode"):
+            # Layer 2: torchcodec specific handling (CRITICAL for Colab)
+            if waveform is None:
                 try:
-                    decoded = audio_data.decode()
-                    if isinstance(decoded, dict) and "array" in decoded:
-                        waveform = torch.tensor(decoded["array"]).unsqueeze(0)
-                        sr = decoded.get("sampling_rate", target_sr)
-                except Exception:
+                    # check if it's a torchcodec object or has get_all_samples
+                    if hasattr(audio_data, "get_all_samples"):
+                        samples = audio_data.get_all_samples()
+                        # If it returns a dict with 'data' and 'sample_rate'
+                        if hasattr(samples, "data"):
+                            waveform = samples.data
+                            if waveform.ndim == 1:
+                                waveform = waveform.unsqueeze(0)
+                            sr = getattr(samples, "sample_rate", target_sr)
+                        else:
+                            waveform = torch.tensor(samples).unsqueeze(0)
+                    elif hasattr(audio_data, "decode"):
+                        decoded = audio_data.decode()
+                        if isinstance(decoded, dict) and "array" in decoded:
+                            waveform = torch.tensor(decoded["array"]).unsqueeze(0)
+                            sr = decoded.get("sampling_rate", target_sr)
+                except Exception as e:
+                    # Silently fail layer 2 as usual
                     pass
-            
+
             # Layer 3: Callable decoder object (common in some HF versions)
             if waveform is None and callable(audio_data):
                 try:
@@ -143,6 +156,9 @@ def process_hf_dataset(dataset_name, output_dir, manifest_path, target_sr=16000)
                     if isinstance(decoded, dict) and "array" in decoded:
                         waveform = torch.tensor(decoded["array"]).unsqueeze(0)
                         sr = decoded.get("sampling_rate", target_sr)
+                    elif hasattr(decoded, "array"):
+                         waveform = torch.tensor(getattr(decoded, "array")).unsqueeze(0)
+                         sr = getattr(decoded, "sampling_rate", target_sr)
                 except Exception:
                     pass
             
@@ -156,16 +172,21 @@ def process_hf_dataset(dataset_name, output_dir, manifest_path, target_sr=16000)
                     pass
 
             if waveform is None:
-                # Last resort: Try to cast to numpy array directly
+                # Last resort: Try to cast to numpy array or torch tensor directly
                 try:
-                    import numpy as np
-                    arr = np.array(audio_data)
-                    waveform = torch.from_numpy(arr).unsqueeze(0)
+                    if torch.is_tensor(audio_data):
+                        waveform = audio_data.unsqueeze(0) if audio_data.ndim == 1 else audio_data
+                    else:
+                        import numpy as np
+                        arr = np.array(audio_data)
+                        waveform = torch.from_numpy(arr).unsqueeze(0)
                 except Exception:
                     print(f"Skipping {i}: Could not decode audio_data of type {type(audio_data)}")
+                    # Print attributes to help debug if it fails again
+                    print(f"Debug Info - Sample {i} attributes: {dir(audio_data)}")
                     continue
         except Exception as e:
-            print(f"Skipping {i} due to decoding error: {e}")
+            print(f"Skipping {i} due to unhandled error: {e}")
             continue
 
         # Standardize to target sample rate (should already be done by cast_column)
