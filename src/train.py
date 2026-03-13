@@ -117,9 +117,11 @@ def train():
     print("Starting training...")
     trainer.train()
 
-    # 7. Save final model
-    model.save_pretrained(os.path.join(args.output_dir, "final"))
-    print(f"Training complete. Model saved to {args.output_dir}")
+    # 7. Save final model and processor
+    final_output_path = os.path.join(args.output_dir, "final")
+    model.save_pretrained(final_output_path)
+    processor.save_pretrained(final_output_path)
+    print(f"Training complete. Model and processor saved to {final_output_path}")
 
 if __name__ == "__main__":
     train()

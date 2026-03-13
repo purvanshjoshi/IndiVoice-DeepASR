@@ -10,7 +10,14 @@ def load_indivoice_model(model_path):
     peft_config = PeftConfig.from_pretrained(model_path)
     base_model = WhisperForConditionalGeneration.from_pretrained(peft_config.base_model_name_or_path)
     model = PeftModel.from_pretrained(base_model, model_path)
-    processor = WhisperProcessor.from_pretrained(peft_config.base_model_name_or_path)
+    
+    # Try to load processor from local path first, else fallback to base model
+    try:
+        print("Loading processor from local path...")
+        processor = WhisperProcessor.from_pretrained(model_path)
+    except Exception:
+        print("Local processor not found, loading from base model...")
+        processor = WhisperProcessor.from_pretrained(peft_config.base_model_name_or_path)
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device)
