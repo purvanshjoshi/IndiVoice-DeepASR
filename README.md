@@ -93,78 +93,15 @@ python src/train.py --output_dir models/indian-accent-lora
 
 ## 📂 Repository Structure
 
-IndiVoice-DeepASR/
-│
-├── assets/                          # Branding & visual assets
-│   ├── banner.png
-│   └── architecture.png
-│
-├── configs/                         # Configuration files for training and datasets
-│   ├── dataset.yaml
-│   ├── training.yaml
-│   └── whisper_lora.yaml
-│
-├── data/                            # Dataset storage and metadata
-│   ├── raw/                         # Original downloaded datasets
-│   ├── processed/                   # Cleaned, standardized audio files
-│   └── manifests/                   # Dataset metadata (JSON/CSV manifests)
-│
-├── src/                             # Core pipeline source code
-│   │
-│   ├── dataset/                     # Dataset loading and handling
-│   │   └── svarah_loader.py
-│   │
-│   ├── preprocessing/               # Audio preprocessing pipeline
-│   │   └── preprocess.py
-│   │
-│   ├── models/                      # Model architecture and adapters
-│   │   ├── whisper_model.py
-│   │   └── lora_adapter.py
-│   │
-│   ├── training/                    # Model training pipeline
-│   │   ├── train.py
-│   │   └── trainer_utils.py
-│   │
-│   ├── evaluation/                  # Metrics and benchmarking tools
-│   │   ├── evaluate.py
-│   │   └── metrics.py
-│   │
-│   └── inference/                   # Speech-to-text inference pipeline
-│       └── transcribe.py
-│
-├── notebooks/                       # Interactive research and Colab notebooks
-│   ├── IndiVoice_Colab_Entry.ipynb
-│   └── dataset_exploration.ipynb
-│
-├── experiments/                     # Experiment runs, logs, and tracking
-│   └── whisper_lora_runs/
-│
-├── models/                          # Saved checkpoints and trained LoRA adapters
-│   ├── checkpoints/
-│   └── lora_weights/
-│
-├── deployment/                      # Production deployment scripts
-│   ├── gradio_app.py
-│   └── api_server.py
-│
-├── scripts/                         # Utility and automation scripts
-│   ├── download_dataset.sh
-│   ├── preprocess_data.sh
-│   └── train_model.sh
-│
-├── paper/                           # Research paper and supporting figures
-│   ├── indivoice_paper.tex
-│   └── figures/
-│
-├── tests/                           # Unit tests
-│   ├── test_dataset.py
-│   └── test_inference.py
-│
-├── requirements.txt
-├── environment.yml
-├── README.md
-├── LICENSE
-└── .gitignore
+• **configs** → centralized configuration for reproducible experiments  
+• **data** → clean separation of raw and processed datasets  
+• **src** → modular ML pipeline (dataset → preprocessing → training → inference)  
+• **experiments** → track training runs and results  
+• **models** → checkpoints and LoRA adapters  
+• **deployment** → production ready inference services  
+• **notebooks** → research exploration and Colab entry point  
+
+This layout keeps the repository **research-friendly, scalable, and production-ready**.
 
 ---
 
