@@ -32,7 +32,13 @@ def prepare_dataset(manifest_path, feature_extractor, tokenizer):
         batch["labels"] = tokenizer(batch["text"]).input_ids
         return batch
 
-    dataset = dataset.map(preprocess_function, remove_columns=dataset.column_names, num_proc=1)
+    dataset = dataset.map(
+        preprocess_function, 
+        remove_columns=dataset.column_names, 
+        num_proc=1,
+        writer_batch_size=100, # Periodically flush to disk to save RAM
+        desc="Vectorizing datasets"
+    )
     return dataset
 
 class DataCollatorSpeechSeq2SeqWithPadding:
