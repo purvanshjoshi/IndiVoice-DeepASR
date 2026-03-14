@@ -124,11 +124,21 @@ def train():
         tokenizer=processor.feature_extractor,
     )
 
-    # 6. Start Training
-    print("Starting training...")
-    trainer.train()
+    # 6. Check for Checkpoint
+    from transformers.trainer_utils import get_last_checkpoint
+    last_checkpoint = None
+    if os.path.exists(args.output_dir):
+        last_checkpoint = get_last_checkpoint(args.output_dir)
+        if last_checkpoint is not None:
+            print(f"Resuming training from checkpoint: {last_checkpoint}")
+        else:
+            print("No checkpoint found. Starting training from scratch...")
 
-    # 7. Save final model and processor
+    # 7. Start Training
+    print("Starting training...")
+    trainer.train(resume_from_checkpoint=last_checkpoint)
+
+    # 8. Save final model and processor
     final_output_path = os.path.join(args.output_dir, "final")
     model.save_pretrained(final_output_path)
     processor.save_pretrained(final_output_path)
