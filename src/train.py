@@ -61,6 +61,14 @@ def train():
 
     # 2. Prepare Model for PEFT
     model.config.use_cache = False # Required for gradient checkpointing
+    # Necessary for gradient checkpointing in PEFT:
+    if hasattr(model, "enable_input_require_grads"):
+        model.enable_input_require_grads()
+    else:
+        def make_inputs_require_grad(module, input, output):
+            output.requires_grad_(True)
+        model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
+        
     model = prepare_model_for_kbit_training(model)
     
     config = LoraConfig(
