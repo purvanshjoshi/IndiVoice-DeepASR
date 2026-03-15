@@ -103,7 +103,7 @@ def train():
         predict_with_generate=True,
         generation_max_length=225,
         save_steps=100,
-        eval_steps=1000,
+        eval_steps=100,
         logging_steps=25,
         report_to=["tensorboard"],
         load_best_model_at_end=True,
