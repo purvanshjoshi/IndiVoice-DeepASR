@@ -102,7 +102,7 @@ def train():
         per_device_eval_batch_size=4, # Lowered from 8
         predict_with_generate=True,
         generation_max_length=225,
-        save_steps=1000,
+        save_steps=500,
         eval_steps=1000,
         logging_steps=25,
         report_to=["tensorboard"],
