@@ -10,10 +10,10 @@
   [![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
   [![License](https://img.shields.io/badge/License-MIT-4CAF50?style=for-the-badge)](LICENSE)
 
-  [**Explore the Code**](https://github.com/purvanshjoshi/IndiVoice-DeepASR) • [**Launch Colab**](https://colab.research.google.com/github/purvanshjoshi/IndiVoice-DeepASR/blob/main/notebooks/IndiVoice_Colab_Entry.ipynb) • [**Read the Paper**](paper/)
+  [**Explore the Code**](https://github.com/purvanshjoshi/IndiVoice-DeepASR) • [**Launch Colab**](https://colab.research.google.com/github/purvanshjoshi/IndiVoice-DeepASR/blob/main/notebooks/IndiVoice_Colab_Entry.ipynb) • [**Launch Kaggle**](https://github.com/purvanshjoshi/IndiVoice-DeepASR/tree/main/kaggle)
 
-  > [!NOTE]
-  > **Latest Stability Update (v1.2)**: Fixed `AudioDecoder` crash in preprocessing and resolved `transformers` v4.4x compatibility issues in the training pipeline.
+  > [!IMPORTANT]
+  > **Ultra-Resilience Update (v1.8)**: Added high-frequency checkpointing (every 100 steps) and auto-resumption to protect against Colab/Kaggle runtime disconnections. Resolved `load_best_model_at_end` compatibility issues.
 </div>
 
 ---
@@ -23,10 +23,11 @@
 Current commercial ASR systems suffer from a **20-30% performance drop** when processing Indian English accents. **IndiVoice-DeepASR** is a research-driven project that fine-tunes OpenAI's Whisper models using **LoRA (Low-Rank Adaptation)** to achieve state-of-the-art accuracy across diverse Indian linguistic profiles.
 
 ### ✨ Key Features
+- **🛡️ Ultra-Resilient**: Automatic checkpoint detection and resumption. Never lose more than 10-15 minutes of training.
 - **🚀 Efficiency**: Fine-tune with < 2% of total parameters using PEFT techniques.
 - **🇮🇳 Localization**: Optimized for Hindi, Tamil, Kannada, Bengali, and Punjabi accents.
-- **⚡ Performance**: Achieve up to **48% reduction in WER** compared to baselines.
-- **📱 Ready to Deploy**: Export models to ONNX/TensorRT for low-latency production use.
+- **🌊 Stable Decoding**: Multi-layered `AudioDecoder` logic for robust preprocessing on diverse system environments.
+- **⚡ Performance**: Achieve significant WER reduction compared to base Whisper models.
 
 ---
 
@@ -40,7 +41,7 @@ Current commercial ASR systems suffer from a **20-30% performance drop** when pr
       <td align="center"><b>Audio Engine</b><br><img src="https://img.shields.io/badge/Torchaudio-EE4C2C?style=flat-square&logo=pytorch&logoColor=white" alt="Audio"></td>
     </tr>
     <tr>
-      <td align="center"><b>Cloud Compute</b><br><img src="https://img.shields.io/badge/Google_Colab-F9AB00?style=flat-square&logo=googlecolab&logoColor=white" alt="Colab"></td>
+      <td align="center"><b>Cloud Compute</b><br><img src="https://img.shields.io/badge/Kaggle-20BEFF?style=flat-square&logo=Kaggle&logoColor=white" alt="Kaggle"> <img src="https://img.shields.io/badge/Google_Colab-F9AB00?style=flat-square&logo=googlecolab&logoColor=white" alt="Colab"></td>
       <td align="center"><b>Deployment</b><br><img src="https://img.shields.io/badge/Gradio-FF9D00?style=flat-square&logo=gradio&logoColor=white" alt="Gradio"></td>
       <td align="center"><b>Infrastructure</b><br><img src="https://img.shields.io/badge/NVIDIA_CUDA-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="CUDA"></td>
     </tr>
@@ -63,32 +64,24 @@ graph LR
 
 ---
 
-## 📊 Benchmark Results
+## 🚀 Quick Start
 
-| Model | Accent Group | Baseline WER | IndiVoice WER | Improvement |
-| :--- | :--- | :---: | :---: | :---: |
-| Whisper-Medium | Pan-Indian | 22.6% | **11.8%** | **48% 🔥** |
-| Whisper-Medium | Hindi-En | 18.4% | **9.2%** | **50% 🔥** |
-| Whisper-Medium | South-En | 24.1% | **13.5%** | **44% 🔥** |
+### 1. Collaborative Training (Recommended)
+Choose your preferred platform for free GPU access:
+- [**Colab Gateway**](https://colab.research.google.com/github/purvanshjoshi/IndiVoice-DeepASR/blob/main/notebooks/IndiVoice_Colab_Entry.ipynb): Best for initial setup and rapid experimentation.
+- [**Kaggle Runner**](https://github.com/purvanshjoshi/IndiVoice-DeepASR/tree/main/kaggle): Best for long-running training (30 hours/week free GPU). Includes a specialized `setup_kaggle.sh` for one-click environment configuration.
 
----
-
-## 🚀 Quick Start in 60 Seconds
-
-### Interactive Development (Recommended)
-Launch our pre-configured [**Colab Gateway**](https://colab.research.google.com/github/purvanshjoshi/IndiVoice-DeepASR/blob/main/notebooks/IndiVoice_Colab_Entry.ipynb) to start training on T4 GPUs immediately.
-
-### Local Development
+### 2. Local Development
 ```bash
 # Clone & Install
 git clone https://github.com/purvanshjoshi/IndiVoice-DeepASR.git
 cd IndiVoice-DeepASR
 pip install -r requirements.txt
 
-# Preprocess
+# Preprocess (Multi-layered decoder support)
 python src/preprocess.py --hf_dataset ai4bharat/Svarah --output_dir data/processed
 
-# Train
+# Train (Auto-resumes from latest checkpoint)
 python src/train.py --output_dir models/indian-accent-lora
 ```
 
@@ -99,7 +92,8 @@ python src/train.py --output_dir models/indian-accent-lora
 ```text
 IndiVoice-DeepASR/
 ├── assets/            # Branding & Visuals
-├── src/               # Optimized Pipeline Scripts
+├── kaggle/            # Dedicated Kaggle training workspace
+├── src/               # Optimized Pipeline Scripts (Train/Preprocess/Deploy)
 ├── notebooks/         # Interactive Research
 ├── data/              # Dataset Symlinks & Manifests
 ├── models/            # Checkpoints & LoRA Weights
