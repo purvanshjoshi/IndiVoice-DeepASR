@@ -108,7 +108,7 @@ If you use this work in your research, please cite:
 
 ```bibtex
 @misc{indivoice2026,
-  author = {Purvansh Joshi},
+  author = {Purvansh Joshi},{Archit Mittal}
   title = {IndiVoice-DeepASR: Efficient Adaptation of Multilingual Speech Models for Indian Accents},
   year = {2026},
   publisher = {GitHub},
