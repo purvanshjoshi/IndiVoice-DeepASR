@@ -4,6 +4,7 @@ import gradio as gr
 import torch
 from transformers import WhisperForConditionalGeneration, WhisperProcessor
 from peft import PeftModel, PeftConfig
+from visualize import plot_mel_spectrogram
 
 def load_indivoice_model(model_path):
     if not os.path.exists(model_path):
@@ -31,9 +32,14 @@ def load_indivoice_model(model_path):
 
 def transcribe(audio_path, model, processor):
     if audio_path is None:
-        return "Please upload or record an audio file."
+        return "Please upload or record an audio file.", None
     
-    # Load and process audio
+    # 1. Generate Spectrogram
+    import tempfile
+    temp_spec = tempfile.NamedTemporaryFile(suffix=".png", delete=False).name
+    plot_mel_spectrogram(audio_path, output_path=temp_spec, title="IndiVoice: Acoustic Fingerprint")
+    
+    # 2. Process Audio for Inference
     import torchaudio
     waveform, sr = torchaudio.load(audio_path)
     if sr != 16000:
@@ -42,12 +48,12 @@ def transcribe(audio_path, model, processor):
         
     input_features = processor(waveform.squeeze().numpy(), sampling_rate=16000, return_tensors="pt").input_features.to(model.device)
     
-    # Generate Transcription
+    # 3. Generate Transcription
     with torch.no_grad():
         predicted_ids = model.generate(input_features)
         transcription = processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
     
-    return transcription
+    return transcription, temp_spec
 
 def launch_demo():
     parser = argparse.ArgumentParser(description="Launch IndiVoice-DeepASR Gradio Demo")
@@ -61,9 +67,12 @@ def launch_demo():
     interface = gr.Interface(
         fn=lambda audio: transcribe(audio, model, processor),
         inputs=gr.Audio(type="filepath", label="Upload or Record Indian English Audio"),
-        outputs=gr.Textbox(label="IndiVoice Transcription"),
-        title="🎧 IndiVoice-DeepASR Demo",
-        description="Fine-tuned Whisper model for superior Indian English Speech-to-Text performance.",
+        outputs=[
+            gr.Textbox(label="IndiVoice Transcription"),
+            gr.Image(label="Mel-Spectrogram (Whisper Input Feature)")
+        ],
+        title="🎧 IndiVoice-DeepASR: Acoustic Intelligence Demo",
+        description="Fine-tuned Whisper for Indian Accents. View the Mel-spectrogram to see exactly what the AI 'hears'.",
         theme="huggingface"
     )
 
