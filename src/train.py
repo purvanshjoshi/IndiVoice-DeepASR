@@ -140,7 +140,7 @@ def train():
         greater_is_better=False,
         push_to_hub=False,
         gradient_checkpointing=True,
-        ddp_find_unused_parameters=True,
+        ddp_find_unused_parameters=False,
         local_rank=int(os.environ.get("LOCAL_RANK", -1)),
     )
 
