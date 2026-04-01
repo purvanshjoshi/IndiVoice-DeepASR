@@ -25,14 +25,14 @@ Paste and run this in the first cell of your Kaggle notebook:
 !bash kaggle/setup_kaggle.sh
 ```
 
-## 4. Run Training
-The setup script handles the "bridge" between Kaggle's input folder and our repository. Just run the training command:
+## 4. Run High-Performance Training
+The setup script now configures **Hugging Face Accelerate** for you. Run this to use **both T4 GPUs**:
 ```bash
-!python src/train.py \
+!accelerate launch src/train.py \
     --train_manifest data/processed/svarah_manifest.json \
-    --val_manifest data/processed/svarah_manifest.json \
-    --output_dir /kaggle/working/whisper-indian-lora
+    --val_manifest data/processed/svarah_manifest.json
 ```
+*Note: The script automatically handles paths for `/kaggle/working`.*
 
 ## 5. Saving Results
 Kaggle's `/kaggle/working` directory is cleared when the session ends. 
