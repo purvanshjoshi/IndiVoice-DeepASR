@@ -14,10 +14,10 @@ echo "📦 Setting up repository..."
 mkdir -p /kaggle/working
 cd /kaggle/working
 
-# Nesting Protection: If we're already inside a version of the repo, move up
-if [[ $(basename $(pwd)) == "IndiVoice-DeepASR" ]]; then
+# Robust Nesting Protection: While we are inside a directory named IndiVoice-DeepASR, move up
+while [[ $(basename $(pwd)) == "IndiVoice-DeepASR" ]]; do
     cd ..
-fi
+done
 
 if [ ! -d "IndiVoice-DeepASR" ]; then
     git clone $REPO_URL
@@ -72,30 +72,40 @@ pip install -r requirements.txt --quiet
 pip install bitsandbytes --quiet 
 
 # 7. Auto-Recovery: Download Audio if missing
-# If manifest exists but audio folder is empty or missing, run preprocess
-if [[ -f "data/processed/svarah_manifest.json" && ! -d "data/processed/svarah" ]]; then
-    echo "⚠️ Audio files missing for Svarah dataset! Launching Auto-Recovery..."
-    
-    # Check for Hugging Face Token (Gated Dataset Requirement)
-    if [[ -z "$HF_TOKEN" ]]; then
-        echo "❌ WARNING: HF_TOKEN not found in environment."
-        echo "   Svarah is a GATED dataset. To fix this:"
-        echo "   1. Add 'HF_TOKEN' to your Kaggle Secrets (Add-ons -> Secrets)."
-        echo "   2. Accept the terms at: https://huggingface.co/datasets/ai4bharat/Svarah"
-        echo "   Continuing attempt anyway..."
+# Trigger if folder missing OR folder is empty (previous failed attempt)
+if [[ -f "data/processed/svarah_manifest.json" ]]; then
+    SHOULD_RECOVER=false
+    if [ ! -d "data/processed/svarah" ]; then
+        SHOULD_RECOVER=true
+    elif [ -z "$(ls -A data/processed/svarah 2>/dev/null)" ]; then
+        SHOULD_RECOVER=true
+        rm -rf data/processed/svarah # Remove empty folder to start fresh
     fi
 
-    mkdir -p data/processed/svarah
-    python src/preprocess.py \
-        --hf_dataset ai4bharat/Svarah \
-        --output_dir data/processed/svarah \
-        --manifest_path data/processed/svarah_manifest.json \
-        --target_sr 16000
-    
-    if [ ! -d "data/processed/svarah" ] || [ -z "$(ls -A data/processed/svarah)" ]; then
-        echo "❌ Auto-Recovery failed! Please ensure HF_TOKEN is correctly set."
-    else
-        echo "✅ Auto-Recovery Complete! Audio files downloaded."
+    if [ "$SHOULD_RECOVER" = true ]; then
+        echo "⚠️ Audio files missing for Svarah dataset! Launching Auto-Recovery..."
+        
+        # Check for Hugging Face Token (Gated Dataset Requirement)
+        if [[ -z "$HF_TOKEN" ]]; then
+            echo "❌ WARNING: HF_TOKEN not found in environment."
+            echo "   Svarah is a GATED dataset. To fix this:"
+            echo "   1. Add 'HF_TOKEN' to your Kaggle Secrets (Add-ons -> Secrets)."
+            echo "   2. Accept the terms at: https://huggingface.co/datasets/ai4bharat/Svarah"
+            echo "   Continuing attempt anyway..."
+        fi
+
+        mkdir -p data/processed/svarah
+        python src/preprocess.py \
+            --hf_dataset ai4bharat/Svarah \
+            --output_dir data/processed/svarah \
+            --manifest_path data/processed/svarah_manifest.json \
+            --target_sr 16000
+        
+        if [ ! -d "data/processed/svarah" ] || [ -z "$(ls -A data/processed/svarah)" ]; then
+            echo "❌ Auto-Recovery failed! Please ensure HF_TOKEN is correctly set."
+        else
+            echo "✅ Auto-Recovery Complete! Audio files downloaded."
+        fi
     fi
 fi
 
