@@ -95,6 +95,14 @@ if [[ -f "data/processed/svarah_manifest.json" ]]; then
         fi
 
         mkdir -p data/processed/svarah
+        
+        # Manifest Liberation: If the manifest is a symlink (to Read-Only input), delete it
+        # so we can write a fresh local version.
+        if [ -L "data/processed/svarah_manifest.json" ]; then
+            echo "🔓 Liberating manifest from read-only symlink..."
+            rm "data/processed/svarah_manifest.json"
+        fi
+
         python src/preprocess.py \
             --hf_dataset ai4bharat/Svarah \
             --output_dir data/processed/svarah \
