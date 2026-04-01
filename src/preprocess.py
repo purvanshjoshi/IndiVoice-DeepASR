@@ -81,6 +81,11 @@ def process_hf_dataset(dataset_name, output_dir, manifest_path, target_sr=16000)
         except Exception:
             continue
             
+    if ds is None:
+        print(f"❌ Error: Could not load any splits (train/test/validation) from dataset '{dataset_name}'.")
+        print("Please check the dataset name or ensure it's a public dataset.")
+        return
+
     # Identify audio and text columns
     audio_cols = [c for c in ds.column_names if c in ["audio", "audio_filepath", "path", "file"]]
     text_cols = [c for c in ds.column_names if c in ["text", "sentence", "transcript", "transcription", "transcript_clean"]]

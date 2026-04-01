@@ -14,6 +14,11 @@ echo "📦 Setting up repository..."
 mkdir -p /kaggle/working
 cd /kaggle/working
 
+# Nesting Protection: If we're already inside a version of the repo, move up
+if [[ $(basename $(pwd)) == "IndiVoice-DeepASR" ]]; then
+    cd ..
+fi
+
 if [ ! -d "IndiVoice-DeepASR" ]; then
     git clone $REPO_URL
 else
@@ -64,7 +69,20 @@ EOF
 # 6. Install Dependencies
 echo "🛠️ Installing optimized dependencies..."
 pip install -r requirements.txt --quiet
-pip install bitsandbytes --quiet # Ensure quantization is available
+pip install bitsandbytes --quiet 
+
+# 7. Auto-Recovery: Download Audio if missing
+# If manifest exists but audio folder is empty or missing, run preprocess
+if [[ -f "data/processed/svarah_manifest.json" && ! -d "data/processed/svarah" ]]; then
+    echo "⚠️ Audio files missing for Svarah dataset! Launching Auto-Recovery..."
+    mkdir -p data/processed/svarah
+    python src/preprocess.py \
+        --hf_dataset ai4bharat/Svarah \
+        --output_dir data/processed/svarah \
+        --manifest_path data/processed/svarah_manifest.json \
+        --target_sr 16000
+    echo "✅ Auto-Recovery Complete! Audio files downloaded."
+fi
 
 echo "✨ Kaggle Setup Complete! Repository is ready for Dual-T4 training."
 echo "👉 Launch command: accelerate launch src/train.py"
