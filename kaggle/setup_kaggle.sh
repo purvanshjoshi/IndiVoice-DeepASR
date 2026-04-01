@@ -75,13 +75,28 @@ pip install bitsandbytes --quiet
 # If manifest exists but audio folder is empty or missing, run preprocess
 if [[ -f "data/processed/svarah_manifest.json" && ! -d "data/processed/svarah" ]]; then
     echo "⚠️ Audio files missing for Svarah dataset! Launching Auto-Recovery..."
+    
+    # Check for Hugging Face Token (Gated Dataset Requirement)
+    if [[ -z "$HF_TOKEN" ]]; then
+        echo "❌ WARNING: HF_TOKEN not found in environment."
+        echo "   Svarah is a GATED dataset. To fix this:"
+        echo "   1. Add 'HF_TOKEN' to your Kaggle Secrets (Add-ons -> Secrets)."
+        echo "   2. Accept the terms at: https://huggingface.co/datasets/ai4bharat/Svarah"
+        echo "   Continuing attempt anyway..."
+    fi
+
     mkdir -p data/processed/svarah
     python src/preprocess.py \
         --hf_dataset ai4bharat/Svarah \
         --output_dir data/processed/svarah \
         --manifest_path data/processed/svarah_manifest.json \
         --target_sr 16000
-    echo "✅ Auto-Recovery Complete! Audio files downloaded."
+    
+    if [ ! -d "data/processed/svarah" ] || [ -z "$(ls -A data/processed/svarah)" ]; then
+        echo "❌ Auto-Recovery failed! Please ensure HF_TOKEN is correctly set."
+    else
+        echo "✅ Auto-Recovery Complete! Audio files downloaded."
+    fi
 fi
 
 echo "✨ Kaggle Setup Complete! Repository is ready for Dual-T4 training."

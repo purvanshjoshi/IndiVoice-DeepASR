@@ -73,7 +73,8 @@ def process_hf_dataset(dataset_name, output_dir, manifest_path, target_sr=16000)
     print(f"Loading Hugging Face dataset: {dataset_name}...")
     
     ds = None
-    for split_choice in ["train", "test", "validation"]:
+    # Prioritize 'test' for benchmark datasets like Svarah
+    for split_choice in ["test", "train", "validation"]:
         try:
             ds = load_dataset(dataset_name, split=split_choice)
             print(f"✅ Successfully loaded '{split_choice}' split.")
@@ -82,8 +83,10 @@ def process_hf_dataset(dataset_name, output_dir, manifest_path, target_sr=16000)
             continue
             
     if ds is None:
-        print(f"❌ Error: Could not load any splits (train/test/validation) from dataset '{dataset_name}'.")
-        print("Please check the dataset name or ensure it's a public dataset.")
+        print(f"❌ Error: Could not load any splits (test/train/validation) from dataset '{dataset_name}'.")
+        print("💡 TIP: If this is a Gated Dataset (like ai4bharat/Svarah):")
+        print("  1. Accept terms at https://huggingface.co/datasets/ai4bharat/Svarah")
+        print("  2. Add your HF_TOKEN to Kaggle Secrets and toggle it ON.")
         return
             
     # Identify audio and text columns
