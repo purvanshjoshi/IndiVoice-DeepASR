@@ -98,6 +98,9 @@ def train():
     model = get_peft_model(model, config)
     model.print_trainable_parameters()
 
+    # Final DDP Stability Fix: Use Non-Reentrant Gradient Checkpointing
+    model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+
     # 4. Load Datasets
     print("Loading datasets...")
     
@@ -139,7 +142,7 @@ def train():
         metric_for_best_model="wer",
         greater_is_better=False,
         push_to_hub=False,
-        gradient_checkpointing=True,
+        gradient_checkpointing=False,
         ddp_find_unused_parameters=False,
         local_rank=int(os.environ.get("LOCAL_RANK", -1)),
     )
