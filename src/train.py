@@ -100,6 +100,19 @@ def train():
 
     # 4. Load Datasets
     print("Loading datasets...")
+    
+    # Data Integrity Check: Verify at least one file exists
+    import json
+    with open(args.train_manifest, "r") as f:
+        first_line = f.readline()
+        if first_line:
+            sample = json.loads(first_line)
+            if not os.path.exists(sample["audio_filepath"]):
+                print(f"\n❌ CRITICAL ERROR: Audio file not found at {sample['audio_filepath']}")
+                print("This usually means you only uploaded the manifest but not the audio files.")
+                print("Tip: Run Section 1 (Setup) in your Kaggle notebook again; the new 'Auto-Recovery' feature will fix this for you!\n")
+                return
+
     train_dataset = prepare_dataset(args.train_manifest, processor.feature_extractor, processor.tokenizer)
     val_dataset = prepare_dataset(args.val_manifest, processor.feature_extractor, processor.tokenizer)
 
