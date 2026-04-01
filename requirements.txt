@@ -9,6 +9,7 @@ accelerate
 # Audio Processing
 librosa
 soundfile
+bitsandbytes
 
 # Evaluation & Metrics
 jiwer
