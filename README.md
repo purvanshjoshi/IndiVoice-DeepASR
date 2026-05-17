@@ -6,6 +6,9 @@
   Bridging the Accent Gap in Modern ASR with Whisper + LoRA
 </div>
 
+> [!NOTE]
+> **Active Repository Notice**: The primary development, active issues, and latest updates for this project are maintained at the official organization repository: **[PxA-Labs/IndiVoice-DeepASR](https://github.com/PxA-Labs/IndiVoice-DeepASR)**. Please direct all issues, feature requests, and contributions there.
+
 [![GitHub Stars](https://img.shields.io/github/stars/purvanshjoshi/IndiVoice-DeepASR?style=for-the-badge&logo=github&color=FFD700)](https://github.com/purvanshjoshi/IndiVoice-DeepASR/stargazers)
 [![Hugging Face](https://img.shields.io/badge/Datasets-Svarah-blue?style=for-the-badge)](https://huggingface.co/datasets/ai4bharat/Svarah)
 [![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
